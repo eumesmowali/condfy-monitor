@@ -11,7 +11,7 @@ async function monitorarCorrespondenciasCondfy() {
     console.log(`[${new Date().toISOString()}] Iniciando verificação de correspondências...`);
 
     const browser = await chromium.launch({
-        headless: false,
+        headless: true,
         args: ['--no-sandbox', '--disable-setuid-sandbox'] // Essencial para rodar dentro de containers Docker
     });
     const context = await browser.newContext();
