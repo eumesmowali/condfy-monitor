@@ -102,6 +102,10 @@ async function monitorarCorrespondenciasCondfy() {
 
     } catch (error) {
         console.error('Erro durante a execução do RPA:', error);
+        try {
+            await page.screenshot({ path: 'error.png' });
+            console.log('📸 Screenshot salvo em error.png para depuração.');
+        } catch (e) {}
     } finally {
         await browser.close();
     }
