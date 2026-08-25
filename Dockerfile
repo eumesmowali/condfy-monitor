@@ -13,5 +13,5 @@ RUN npm install
 # Copia o restante do código da aplicação
 COPY . .
 
-# Comando para iniciar a aplicação
-CMD ["npm", "start"]
+# Comando para iniciar a aplicação com uma tela virtual (Xvfb)
+CMD ["xvfb-run", "-a", "npm", "start"]
