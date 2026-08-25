@@ -24,8 +24,12 @@ async function monitorarCorrespondenciasCondfy() {
         await page.fill('input[name="password"]', CONDFY_PASS);
         await page.click('button[type="submit"]');
 
-        await page.waitForURL('**/unidades/**', { timeout: 15000 });
-        await page.waitForSelector('a[aria-label="Entregas"]', { timeout: 10000 });
+        try {
+            await page.waitForSelector('a[aria-label="Entregas"]', { timeout: 20000 });
+        } catch (e) {
+            await page.screenshot({ path: 'error.png' });
+            throw new Error('Botão Entregas não apareceu. Screenshot salvo em error.png');
+        }
         await page.click('a[aria-label="Entregas"]');
         await page.waitForSelector('table.MuiTable-root tbody tr', { timeout: 10000 });
 
