@@ -26,11 +26,11 @@ async function monitorarCorrespondenciasCondfy() {
 
         try {
             await page.waitForSelector('a[aria-label="Entregas"]', { timeout: 20000 });
+            await page.click('a[aria-label="Entregas"]');
         } catch (e) {
-            await page.screenshot({ path: 'error.png' });
-            throw new Error('Botão Entregas não apareceu. Screenshot salvo em error.png');
+            console.log('⚠️ Botão Entregas não apareceu. Tentando acessar a URL diretamente...');
+            await page.goto('https://web.condfy.com.br/licencas/24027/correspondencias', { waitUntil: 'networkidle' });
         }
-        await page.click('a[aria-label="Entregas"]');
         await page.waitForSelector('table.MuiTable-root tbody tr', { timeout: 10000 });
 
         const correspondencias = await page.evaluate(() => {
