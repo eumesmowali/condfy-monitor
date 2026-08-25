@@ -10,6 +10,10 @@ const LAST_NOTIFIED_FILE = 'last_notified.json';
 async function monitorarCorrespondenciasCondfy() {
     console.log(`[${new Date().toISOString()}] Iniciando verificação de correspondências...`);
 
+    if (!CONDFY_USER || !CONDFY_PASS) {
+        throw new Error('⚠️ ERRO CRÍTICO: As variáveis CONDFY_USER ou CONDFY_PASS estão vazias! Verifique as configurações (Environment Variables) no Coolify.');
+    }
+
     const browser = await chromium.launch({
         headless: false,
         args: ['--no-sandbox', '--disable-setuid-sandbox'] // Essencial para rodar dentro de containers Docker
@@ -20,8 +24,13 @@ async function monitorarCorrespondenciasCondfy() {
     try {
         await page.goto('https://web.condfy.com.br/login', { waitUntil: 'networkidle' });
 
-        await page.fill('input[name="username"]', CONDFY_USER);
-        await page.fill('input[name="password"]', CONDFY_PASS);
+        await page.waitForSelector('input[name="username"]');
+        await page.locator('input[name="username"]').click();
+        await page.locator('input[name="username"]').pressSequentially(CONDFY_USER, { delay: 100 });
+        
+        await page.locator('input[name="password"]').click();
+        await page.locator('input[name="password"]').pressSequentially(CONDFY_PASS, { delay: 100 });
+        
         await page.click('button[type="submit"]');
 
         try {
