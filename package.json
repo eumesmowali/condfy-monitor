@@ -1,0 +1,13 @@
+{
+  "name": "condfy-monitor",
+  "version": "1.0.0",
+  "description": "RPA para monitoramento de correspondências no Condfy",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "playwright": "^1.45.0"
+  }
+}
