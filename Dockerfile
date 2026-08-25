@@ -14,4 +14,4 @@ RUN npm install
 COPY . .
 
 # Comando para iniciar a aplicação com uma tela virtual (Xvfb)
-CMD ["xvfb-run", "-a", "npm", "start"]
+CMD ["xvfb-run", "--server-args=-screen 0 1280x1024x24", "-a", "node", "index.js"]
