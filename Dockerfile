@@ -1,5 +1,5 @@
 # Usando a imagem oficial do Playwright que já contém todas as dependências de sistema necessárias
-FROM mcr.microsoft.com/playwright:v1.42.1-jammy
+FROM mcr.microsoft.com/playwright:v1.62.1-jammy
 
 # Define o diretório de trabalho dentro do container
 WORKDIR /app
