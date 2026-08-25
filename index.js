@@ -114,3 +114,22 @@ monitorarCorrespondenciasCondfy();
 setInterval(() => {
     monitorarCorrespondenciasCondfy();
 }, CHECK_INTERVAL_MINUTES * 60 * 1000);
+
+// Servidor web simples para expor o screenshot de erro
+const http = require('http');
+http.createServer((req, res) => {
+    if (req.url === '/error.png' || req.url === '/') {
+        if (fs.existsSync('error.png')) {
+            res.writeHead(200, { 'Content-Type': 'image/png' });
+            res.end(fs.readFileSync('error.png'));
+        } else {
+            res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+            res.end('Nenhum erro registrado no momento. O robô está rodando perfeitamente!');
+        }
+    } else {
+        res.writeHead(404);
+        res.end();
+    }
+}).listen(3000, () => {
+    console.log('🌐 Servidor de debug ativo na porta 3000. Acesse para ver o último erro.');
+});
