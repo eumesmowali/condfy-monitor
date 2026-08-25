@@ -82,7 +82,9 @@ async function monitorarCorrespondenciasCondfy() {
 
             if (process.env.HA_WEBHOOK_URL) {
                 try {
-                    await fetch(process.env.HA_WEBHOOK_URL, {
+                    // Ignora erros de SSL (muito comum em redes locais com Home Assistant)
+                    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+                    const response = await fetch(process.env.HA_WEBHOOK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -91,9 +93,13 @@ async function monitorarCorrespondenciasCondfy() {
                             total_pendentes: pendentes.length
                         })
                     });
-                    console.log(`✅ Webhook enviado ao HA.`);
+                    if (!response.ok) {
+                        console.error(`❌ HA retornou erro HTTP: ${response.status} ${response.statusText}`);
+                    } else {
+                        console.log(`✅ Webhook enviado ao HA com sucesso.`);
+                    }
                 } catch (err) {
-                    console.error('❌ Erro ao enviar webhook para o HA:', err.message);
+                    console.error('❌ Erro ao enviar webhook para o HA:', err.message, err.cause ? err.cause : '');
                 }
             }
 
