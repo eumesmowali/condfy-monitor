@@ -13,5 +13,5 @@ RUN npm install
 # Copia o restante do código da aplicação
 COPY . .
 
-# Comando para iniciar a aplicação com uma tela virtual (Xvfb)
-CMD ["xvfb-run", "--server-args=-screen 0 1280x1024x24", "-a", "node", "index.js"]
+# Comando para iniciar a aplicação exportando o display virtual
+CMD sh -c "Xvfb :99 -screen 0 1280x1024x24 & export DISPLAY=:99 && node index.js"
