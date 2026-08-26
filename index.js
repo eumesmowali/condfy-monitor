@@ -60,59 +60,92 @@ async function monitorarCorrespondenciasCondfy() {
                     const dataRecebimento = recebimentoElements[0] ? recebimentoElements[0].innerText.trim() : '';
                     const situacaoElements = cols[4].querySelectorAll('p');
                     const status = situacaoElements[0] ? situacaoElements[0].innerText.trim() : '';
+                    const dataStatus = situacaoElements[1] ? situacaoElements[1].innerText.trim() : '';
+                    let quemRetirou = '';
+                    
+                    if (status.toLowerCase().includes('retirada por')) {
+                        quemRetirou = status.replace(/retirada por/i, '').trim();
+                    }
 
-                    results.push({ id, unidade, tipo, remetente, dataRecebimento, status });
+                    results.push({ id, unidade, tipo, remetente, dataRecebimento, status, dataStatus, quemRetirou });
                 }
             });
             return results;
         });
 
+        const hojeDateString = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
         const pendentes = correspondencias.filter(c => !c.status.toLowerCase().includes('retirada'));
+        const retiradasHoje = correspondencias.filter(c => c.status.toLowerCase().includes('retirada') && c.dataStatus.startsWith(hojeDateString));
 
         let lastNotifiedIds = [];
         if (fs.existsSync(LAST_NOTIFIED_FILE)) {
             lastNotifiedIds = JSON.parse(fs.readFileSync(LAST_NOTIFIED_FILE, 'utf8'));
         }
 
+        const LAST_NOTIFIED_RETIRADAS_FILE = 'last_notified_retiradas.json';
+        let lastNotifiedRetiradasIds = [];
+        if (fs.existsSync(LAST_NOTIFIED_RETIRADAS_FILE)) {
+            lastNotifiedRetiradasIds = JSON.parse(fs.readFileSync(LAST_NOTIFIED_RETIRADAS_FILE, 'utf8'));
+        }
+
         const currentIds = pendentes.map(c => c.id);
         const newDeliveries = pendentes.filter(c => !lastNotifiedIds.includes(c.id));
+        const newRetiradas = retiradasHoje.filter(c => !lastNotifiedRetiradasIds.includes(c.id));
 
         if (newDeliveries.length > 0) {
-            console.log(`⚠️ ATENÇÃO: Existem ${newDeliveries.length} NOVA(S) correspondência(s) pendente(s)!`);
-
+            console.log(`⚠️ ATENÇÃO: ${newDeliveries.length} NOVA(S) pendente(s) detectada(s)!`);
             if (process.env.HA_WEBHOOK_URL) {
                 try {
-                    // Ignora erros de SSL (muito comum em redes locais com Home Assistant)
                     process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
                     const response = await fetch(process.env.HA_WEBHOOK_URL, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
+                            evento: "NOVA_ENCOMENDA",
                             quantidade: newDeliveries.length,
                             entregas: newDeliveries,
                             total_pendentes: pendentes.length
                         })
                     });
-                    if (!response.ok) {
-                        console.error(`❌ HA retornou erro HTTP: ${response.status} ${response.statusText}`);
-                    } else {
-                        console.log(`✅ Webhook enviado ao HA com sucesso.`);
-                    }
+                    if (!response.ok) console.error(`❌ HA retornou erro HTTP: ${response.status} ${response.statusText}`);
+                    else console.log(`✅ Webhook de NOVAS ENCOMENDAS enviado ao HA com sucesso.`);
                 } catch (err) {
-                    console.error('❌ Erro ao enviar webhook para o HA:', err.message, err.cause ? err.cause : '');
+                    console.error('❌ Erro ao enviar webhook para o HA:', err.message);
                 }
             }
-
-            // Atualiza o arquivo de controle com todas as correspondências atualmente pendentes
             fs.writeFileSync(LAST_NOTIFIED_FILE, JSON.stringify(currentIds));
         } else if (pendentes.length > 0) {
-            console.log(`✅ Existem ${pendentes.length} correspondência(s) pendente(s), mas já foram notificadas anteriormente.`);
+            console.log(`✅ ${pendentes.length} pendente(s), mas já foram notificadas.`);
         } else {
             console.log('✅ Nenhuma correspondência pendente no momento.');
-            // Limpa o arquivo caso não tenha mais nada pendente
-            if (fs.existsSync(LAST_NOTIFIED_FILE)) {
-                fs.writeFileSync(LAST_NOTIFIED_FILE, JSON.stringify([]));
+            if (fs.existsSync(LAST_NOTIFIED_FILE)) fs.writeFileSync(LAST_NOTIFIED_FILE, JSON.stringify([]));
+        }
+
+        if (newRetiradas.length > 0) {
+            console.log(`⚠️ ATENÇÃO: ${newRetiradas.length} NOVA(S) retirada(s) detectada(s) hoje!`);
+            if (process.env.HA_WEBHOOK_URL) {
+                try {
+                    process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+                    const response = await fetch(process.env.HA_WEBHOOK_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            evento: "ENCOMENDA_RETIRADA",
+                            quantidade: newRetiradas.length,
+                            entregas: newRetiradas,
+                            total_pendentes: pendentes.length
+                        })
+                    });
+                    if (!response.ok) console.error(`❌ HA retornou erro HTTP: ${response.status} ${response.statusText}`);
+                    else console.log(`✅ Webhook de RETIRADAS enviado ao HA com sucesso.`);
+                } catch (err) {
+                    console.error('❌ Erro ao enviar webhook de retiradas para o HA:', err.message);
+                }
             }
+            fs.writeFileSync(LAST_NOTIFIED_RETIRADAS_FILE, JSON.stringify([...lastNotifiedRetiradasIds, ...newRetiradas.map(c => c.id)]));
+        } else if (retiradasHoje.length > 0) {
+            console.log(`✅ ${retiradasHoje.length} retirada(s) hoje, mas já foram notificadas.`);
+        }
         }
 
     } catch (error) {

@@ -14,15 +14,22 @@ const mockDeliveries = [
         tipo: "Pacote Grande",
         remetente: "Mercado Livre",
         dataRecebimento: new Date().toLocaleDateString('pt-BR'),
-        status: "Pendente"
-    },
+        status: "Aguardando Retirada",
+        dataStatus: "",
+        quemRetirou: ""
+    }
+];
+
+const mockRetiradas = [
     {
         id: "TESTE-456",
         unidade: "Apto 101",
         tipo: "Envelope",
         remetente: "Correios",
         dataRecebimento: new Date().toLocaleDateString('pt-BR'),
-        status: "Pendente"
+        status: "Retirada por Walison Souza Dos Santos",
+        dataStatus: `${new Date().toLocaleDateString('pt-BR')} 09:18`,
+        quemRetirou: "Walison Souza Dos Santos"
     }
 ];
 
@@ -32,21 +39,40 @@ async function testarWebhook() {
     console.log(`Conteúdo enviado:`, JSON.stringify(mockDeliveries, null, 2));
 
     try {
-        const response = await fetch(HA_WEBHOOK_URL, {
+        const responsePendentes = await fetch(HA_WEBHOOK_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                evento: "NOVA_ENCOMENDA",
                 quantidade: mockDeliveries.length,
                 entregas: mockDeliveries,
                 total_pendentes: mockDeliveries.length
             })
         });
 
-        if (response.ok) {
-            console.log('✅ SUCESSO! O Home Assistant recebeu a notificação perfeitamente.');
+        if (responsePendentes.ok) {
+            console.log('✅ SUCESSO! HA recebeu notificação de NOVAS ENCOMENDAS.');
         } else {
-            console.error(`❌ O HA retornou um erro! Status: ${response.status} ${response.statusText}`);
+            console.error(`❌ Erro HA (Novas): ${responsePendentes.status}`);
         }
+
+        const responseRetiradas = await fetch(HA_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                evento: "ENCOMENDA_RETIRADA",
+                quantidade: mockRetiradas.length,
+                entregas: mockRetiradas,
+                total_pendentes: mockDeliveries.length
+            })
+        });
+
+        if (responseRetiradas.ok) {
+            console.log('✅ SUCESSO! HA recebeu notificação de RETIRADAS.');
+        } else {
+            console.error(`❌ Erro HA (Retiradas): ${responseRetiradas.status}`);
+        }
+
     } catch (error) {
         console.error('❌ Falha ao tentar conectar com a URL do Home Assistant:', error.message);
     }
