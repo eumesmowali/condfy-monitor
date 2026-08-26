@@ -146,7 +146,6 @@ async function monitorarCorrespondenciasCondfy() {
         } else if (retiradasHoje.length > 0) {
             console.log(`✅ ${retiradasHoje.length} retirada(s) hoje, mas já foram notificadas.`);
         }
-        }
 
     } catch (error) {
         console.error('Erro durante a execução do RPA:', error);
